@@ -51,51 +51,58 @@ import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.navigation.NavController
+import androidx.navigation.compose.currentBackStackEntryAsState
 import coil.compose.SubcomposeAsyncImage
 import coil.request.ImageRequest
+import com.example.movieappmad24.bars.BottomNavigationItem
+import com.example.movieappmad24.bars.SimpleBottomAppBar
+import com.example.movieappmad24.bars.SimpleTopAppBar
 import com.example.movieappmad24.models.Movie
 import com.example.movieappmad24.models.getMovies
+import com.example.movieappmad24.navigation.Screen
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun HomeScreen(navController: NavController) {
+    val bottomNavigationItem = listOf(
+        BottomNavigationItem(
+            icon = Icons.Filled.Home,
+            label = "Home",
+            route = Screen.HomeScreen.route
+        ),
+        BottomNavigationItem(
+            icon = Icons.Filled.Star,
+            label = "Watchlist",
+            route = Screen.WatchlistScreen.route
+        )
+    )
+    val currentRoute = navController.currentBackStackEntryAsState().value?.destination?.route
     Scaffold (
         topBar = {
-            CenterAlignedTopAppBar(
+            SimpleTopAppBar(
                 title = { Text("Movie App")},
-                colors = TopAppBarDefaults.topAppBarColors(
                     containerColor = MaterialTheme.colorScheme.primaryContainer,
                     titleContentColor = MaterialTheme.colorScheme.primary
-                )
             )
         },
         bottomBar = {
-            NavigationBar {
-                NavigationBarItem(
-                    label = { Text("Home") },
-                    selected = true,
-                    onClick = { /*TODO*/ },
-                    icon = { Icon(
-                        imageVector = Icons.Filled.Home,
-                        contentDescription = "Go to home"
-                    )}
-                )
-                NavigationBarItem(
-                    label = { Text("Watchlist") },
-                    selected = false,
-                    onClick = { /*TODO*/ },
-                    icon = { Icon(
-                        imageVector = Icons.Filled.Star,
-                        contentDescription = "Go to watchlist"
-                    )}
-                )
-            }
+            SimpleBottomAppBar(
+                items = bottomNavigationItem,
+                currentRoute = currentRoute,
+                onItemSelected = {route ->
+                    navController.navigate(route) {
+                        popUpTo(navController.graph.startDestinationId)
+                        launchSingleTop = true
+                    }
+                })
         }
     ){ innerPadding ->
         MovieList(
             modifier = Modifier.padding(innerPadding),
             movies = getMovies(),
-            navController = navController
+            onItemClick = { movieId ->
+                navController.navigate(Screen.DetailScreen.createRoute(movieId))
+            }
         )
     }
 }
@@ -105,13 +112,11 @@ fun HomeScreen(navController: NavController) {
 fun MovieList(
     modifier: Modifier,
     movies: List<Movie> = getMovies(),
-    navController: NavController
+    onItemClick: (String) -> Unit
     ){
     LazyColumn(modifier = modifier) {
         items(movies) { movie ->
-            MovieRow(movie = movie){ movieId ->
-                navController.navigate("detailscreen/$movieId")
-            }
+            MovieRow(movie = movie, onItemClick = onItemClick)
         }
     }
 }
@@ -135,7 +140,6 @@ fun MovieRow(
             MovieCardHeader(imageUrl = movie.images[0])
 
             MovieDetails(modifier = Modifier.padding(12.dp), movie = movie)
-
         }
     }
 }
